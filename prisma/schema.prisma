@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// LogOrder Model
+model LogOrder {
+  id       String   @id @default(uuid())
+  data     Json
+  orderId  String
+  tags     String[]
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  createAt DateTime @default(now())
+}
+
+enum TypeBooking {
+  PACKAGING
+  CHEMICALS
+}
+
+enum UnitBooking {
+  GRAMS
+  MILLILITER
+  BARRELS
+}
+
+enum StatusEnum {
+  CREATE
+  SHIPPING
+  RECEIVED
+}
+
+model Order {
+  id               String      @id @default(uuid())
+  name             String
+  type             TypeBooking
+  unit             UnitBooking
+  amount           BigInt
+  status           StatusEnum
+  log              LogOrder[]
+  expectDeliveryAt DateTime
+  createAt         DateTime    @default(now())
+  updateAt         DateTime    @updatedAt
+}
+
+// Role
+// Admin All
+// Manager post tag order stock product chemical
+// Accountance stock order product
+// Researcher order product write-chemical
+// Paperworker read-chemical product
+// Writer post tag
+
+// Role Model
+enum Role {
+  Admin
+  Manager
+  Accountance
+  Researcher
+  Paperworker
+  Writer
+}
+
+model Image {
+  id        String   @id
+  public_id String
+  width     Int
+  height    Int
+  tags      String[]
+  url       String
+  uploadBy  User     @relation(fields: [userId], references: [id])
+  userId    String
+  createAt  DateTime @default(now())
+}
+
+// User Model
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String?
+  role      Role       @default(Writer)
+  isActive  Boolean    @default(true)
+  username  String
+  bio       String     @default("")
+  phone     String     @default("")
+  avatarUrl String?
+  address   String     @default("")
+  posts     Post[]
+  logOrder  LogOrder[]
+  images    Image[]
+  createAt  DateTime   @default(now())
+  updateAt  DateTime   @updatedAt
+
+  @@index([email, username, phone])
+}
+
+// Tag Model
+model Tag {
+  id       String   @id @default(uuid())
+  tagName  String
+  slug     String   @unique
+  post     Post[]
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  @@index([tagName, slug])
+}
+
+// Post Model
+model Post {
+  id       String   @id @default(uuid())
+  title    String
+  thumnail String
+  slug     String   @unique
+  content  String
+  tag      Tag      @relation(fields: [tagId], references: [id])
+  tagId    String
+  author   User     @relation(fields: [authorId], references: [id])
+  authorId String
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  @@index([title, slug, tagId, authorId])
+}
+
+// OTP Model
+enum OtpType {
+  SIGNINUP
+  RESETPASSWORD
+}
+
+model Otp {
+  id       String   @id @default(uuid())
+  code     String
+  type     OtpType
+  verified Boolean  @default(false)
+  email    String
+  expireAt DateTime
+
+  @@unique([code, email])
+  @@index([code, email])
+}
